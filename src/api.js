@@ -1,15 +1,11 @@
-const express = require('express')
-const cors = require("cors")
 const socketio = require('socket.io');
 const http = require('http');
-
-const PORT = 5000
+const CONFIG = require('../config');
 
 const ERROR_RESPONSE = 'GIMP-TRACKER Error response';
 
-var app = null;
-var apiServer = null;
-var runeliteSocket = null;
+var httpServer = null;
+var serverSocket = null;
 
 var API_INITIALIZED = false;
 
@@ -17,29 +13,13 @@ var initFuncs = [];
 
 async function InitializeAPI()
 {
-    app = express();
-    app.use(cors({
-        origin: "xxx",        // allow to server to accept request from different origin
-        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    }));
+    httpServer = http.createServer();
+    serverSocket = socketio(httpServer, {cors:{origins:'*:*'}});
 
-    app.get('/', (req, res) => 
+    httpServer.listen(CONFIG.PORT, () => 
     {
-        res.send('No')
+        console.log(`Listening at http://localhost:${CONFIG.PORT}`)
     })
-
-    apiServer = http.createServer(app);
-
-    apiServer.listen(PORT, () => 
-    {
-        console.log(`Listening at http://localhost:${PORT}`)
-    })
-
-    runeliteSocket = socketio(apiServer,{
-        cors: {
-            origin: "xxx",
-            credentials: true
-          }});
 }
 
 function OnApiInitialized(fun)
@@ -60,6 +40,25 @@ function SetInitialized(value)
     }
 }
 
+function AutorizationMiddleware(socket, next)
+{
+    console.log(socket.handshake.auth);
+
+    if(socket.handshake.auth.token && socket.handshake.auth.token == CONFIG.PASSWORD)
+    {
+        next();
+    }
+    else
+    {
+        socket.disconnect();
+    }
+}
+
+function IsAuthorized(socket)
+{
+    return socket.handshake.auth.token != null && socket.handshake.auth.token == CONFIG.PASSWORD;
+}
+
 module.exports = 
 {
     ERROR_RESPONSE,
@@ -70,5 +69,8 @@ module.exports =
     InitializeAPI,
     OnApiInitialized,
     
-    GetSocket: () => runeliteSocket,
+    GetSocket: () => serverSocket,
+
+    AutorizationMiddleware,
+    IsAuthorized,
 }

@@ -60,6 +60,7 @@ Api.OnApiInitialized(() =>
             console.log(`Invalid client attempted to connect '${system}'`);
             socket.disconnect();
         }
+
         // _query.system = frontend or runelite
         next();
     })
@@ -79,6 +80,15 @@ Api.OnApiInitialized(() =>
         }
         else if(system == 'runelite')
         {
+            // if the client claims to connect from runelite, check authorization
+            if(!Api.IsAuthorized(socket))
+            {
+                console.log(`Authorization failed, incorrect password: ${socket.handshake.auth.token}`);
+                socket.disconnect();
+                return;
+            }
+
+            socket.emit('authorize', 'success');
             socket.join(system);
             // runelite client connected, can now expect data from the client
 
