@@ -1,33 +1,29 @@
 const Api = require('./api')
+const {Client} = require('./client')
+const {Player} = require('./player')
 
 var CLIENTS = new Map();
 
-class Player
+function ConnectClient(socket, packet)
 {
-    constructor(name, position)
-    {
-        this.name = name;
-        this.position = position;
-    }
-}
-
-class Client
-{
-    constructor(socket, player)
-    {
-        this.socket = socket;
-        this.player = player;
-    }
-}
-
-function ConnectClient(socket, player)
-{
+    var player = new Player();
     var client = new Client(socket, player);
+
+    client.parsePacket(packet);
     CLIENTS.set(socket, client);
 
-    // emit every connected frontend that a client connected
-    Api.GetSocket().to('frontend').emit('BEND_CLIENT_JOIN', {name:player.name, pos:player.position});
+    if(client.player.name == null)
+    {
+        // name was not passed, bad packet
+        // TODO: better packet validation later
+        return false;
+    }
 
+    // emit every connected frontend that a client connected
+    
+    var fullPacket = client.createFullPacket();
+    Api.GetSocket().to('frontend').emit('BEND_CLIENT_JOIN', fullPacket);
+    
     console.log(`Player '${player.name}' connected`);
     return client;
 }
@@ -72,14 +68,16 @@ Api.OnApiInitialized(() =>
         if(system == 'frontend')
         {
             socket.join(system);
+            console.log("frontend connection!");
             for(var [key, value] of CLIENTS)
             {
                 // TODO: send an array instead of calling multiple emits
-                socket.emit('BEND_CLIENT_JOIN', {name:value.player.name, pos:value.player.position});
+                socket.emit('BEND_CLIENT_JOIN', value.createFullPacket());
             }
         }
         else if(system == 'runelite')
         {
+            console.log("backend connection!");
             // if the client claims to connect from runelite, check authorization
             if(!Api.IsAuthorized(socket))
             {
@@ -98,27 +96,36 @@ Api.OnApiInitialized(() =>
                 var parsedJson = JSON.parse(data);
 
                 if(GetClient(socket) == null)
-                    ConnectClient(socket, new Player(parsedJson.name, parsedJson.pos));
+                {
+                    if(!ConnectClient(socket, parsedJson))
+                        socket.disconnect();
+                }
             });
 
             // called everytime a player moves, does an action, gains exp... etc..
             socket.on('RL_UPDATE_STATE', (data) =>
             {
-                console.log(data);
-
                 var parsedJson = JSON.parse(data);
                 var client = GetClient(socket)
                 if(client == null)
                 {
-                    client = ConnectClient(socket, new Player(parsedJson.name, parsedJson.pos));
+                    // if the client somehow dont exist here, disconnect him and force him to reconnect
+                    socket.disconnect();
+                    //client = ConnectClient(socket, new Player(parsedJson.name, parsedJson.pos));
                 }
                 else
                 {
                     // update state
-                    client.player.position = parsedJson.pos;
+                    client.parsePacket(parsedJson);
 
-                    // if player is connected, move him
-                    Api.GetSocket().to('frontend').emit('BEND_CLIENT_UPDATE', {name:client.player.name, pos:client.player.position});
+                    //var fullPacket = client.createFullPacket();
+
+                    // add identifier to the packet, so front end clients can identify the packet
+                    parsedJson.name = client.player.name;
+                    console.log(parsedJson);
+
+                    // volatile for updating, no need to resend old packets
+                    Api.GetSocket().to('frontend').volatile.emit('BEND_CLIENT_UPDATE', parsedJson); 
                 }
             });
 
@@ -129,13 +136,3 @@ Api.OnApiInitialized(() =>
         }
     });
 });
-
-module.exports = 
-{
-    Client,
-    Player,
-
-    ConnectClient,
-    GetClient,
-    DisconnectClient,
-}
