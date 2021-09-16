@@ -1,4 +1,4 @@
-const {INVENTORY_SIZE} = require('./player')
+const {INVENTORY_SIZE, SKILLS} = require('./player')
 
 class Client
 {
@@ -35,6 +35,19 @@ class Client
                 }
             }
         }
+
+        if(packet.skills != null)
+        {
+            for(var i = 0; i < SKILLS.TOTAL; i++)
+            {
+                if(packet.skills[`${i}`] != null)
+                {
+                    var item = this.player.skills.getSkill(i);
+                    item.id = packet.skills[`${i}`].id;
+                    item.experience = packet.skills[`${i}`].experience;
+                }
+            }
+        }
     }
 
     // should only be used on frontend connect event really
@@ -48,11 +61,14 @@ class Client
 
         var inventory = {};
         for(var i = 0; i < INVENTORY_SIZE; i++)
-        {
             inventory[`${i}`] = this.player.inventory.getSlot(i);
-        }
+
+        var skills = {};
+        for(var i = 0; i < SKILLS.TOTAL; i++)
+            skills[`${i}`] = this.player.skills.getSkill(i);
 
         packet.inventory = inventory;
+        packet.skills = skills;
         return packet;
     }
 }
