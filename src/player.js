@@ -1,4 +1,5 @@
 const INVENTORY_SIZE = 28;
+const EQUIPMENT_SIZE = 14;
 
 const SKILLS =
 {
@@ -29,6 +30,24 @@ const SKILLS =
     TOTAL: 23,
 }
 
+const EQUIPMENT =
+{
+    HEAD: 0,
+    CAPE: 1,
+    AMULET: 2,
+    WEAPON: 3,
+    BODY: 4,
+    SHIELD: 5,
+    LEGS: 7,
+    GLOVES: 9,
+    BOOTS: 10,
+    RING: 12,
+    AMMO: 13,
+
+    MAX: EQUIPMENT_SIZE,
+}
+
+
 class Item 
 {
     constructor(id, quantity)
@@ -49,10 +68,10 @@ class Skill
 
 class Inventory
 {
-    constructor()
+    constructor(size)
     {
-        this.items = new Array(INVENTORY_SIZE);
-        for(var i = 0; i < INVENTORY_SIZE; i++)
+        this.items = new Array(size);
+        for(var i = 0; i < size; i++)
             this.items[i] = new Item(-1, 0);
     }
     
@@ -88,8 +107,9 @@ class Player
     {
         this.name = null;
         this.position = {x:0, y:0};
-        this.inventory = new Inventory();
+        this.inventory = new Inventory(INVENTORY_SIZE);
         this.skills = new Skills();
+        this.equipment = new Inventory(EQUIPMENT_SIZE);
     }
 }
 
@@ -100,5 +120,6 @@ module.exports =
     Item,
 
     INVENTORY_SIZE,
+    EQUIPMENT_SIZE,
     SKILLS
 }
