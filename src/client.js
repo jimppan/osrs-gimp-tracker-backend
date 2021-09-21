@@ -2,10 +2,13 @@ const {INVENTORY_SIZE, EQUIPMENT_SIZE, SKILLS} = require('./player')
 
 class Client
 {
-    constructor(socket, player)
+    constructor(socket, player, worldserver)
     {
         this.socket = socket;
         this.player = player;
+        this.worldserver = worldserver;
+        
+        socket.clientData = this;
     }
 
     parsePacket(packet)
@@ -16,6 +19,18 @@ class Client
 
         if(packet.name != null)
             this.player.name = packet.name;
+
+        if(packet.world != null)
+        {
+            var oldWorld = this.player.world;
+            var newWorld = packet.world;
+
+            this.player.world = newWorld;
+
+            // check if player hopped
+            if(oldWorld != -1 && newWorld != -1 && oldWorld != newWorld)
+                this.hop(newWorld);
+        }
 
         if(packet.pos != null)
         {
@@ -70,6 +85,7 @@ class Client
         var packet = {};
 
         packet.name = this.player.name;
+        packet.world = this.player.world;
         packet.pos = this.player.position;
 
         var inventory = {};
@@ -89,6 +105,24 @@ class Client
         packet.equipment = equipment;
 
         return packet;
+    }
+
+    hop(worldId)
+    {
+        var world = this.worldserver;
+        var worldManager = world.manager;
+
+        var worldTo = worldManager.getWorld(worldId);
+        if(worldTo == null)
+        {
+            console.log(`Error: Attempted to hop to invalid world id '${worldId}'`);
+            return false;
+        }
+
+        console.log(`Player '${this.player.name}' hopped`);
+        world.removeClient(this);
+        worldTo.addClient(this);
+        return true;
     }
 }
 

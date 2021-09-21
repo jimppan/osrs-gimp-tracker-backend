@@ -106,7 +106,8 @@ class Player
     constructor()
     {
         this.name = null;
-        this.position = {x:0, y:0};
+        this.world = -1;
+        this.position = {x:0, y:0, plane:0};
         this.inventory = new Inventory(INVENTORY_SIZE);
         this.skills = new Skills();
         this.equipment = new Inventory(EQUIPMENT_SIZE);

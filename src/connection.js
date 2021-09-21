@@ -1,49 +1,8 @@
-const Api = require('./api')
-const {Client} = require('./client')
-const {Player} = require('./player')
+const Api = require('./api');
+const { WorldManager } = require('./worldmanager');
 
-var CLIENTS = new Map();
 
-function ConnectClient(socket, packet)
-{
-    var player = new Player();
-    var client = new Client(socket, player);
-
-    client.parsePacket(packet);
-    CLIENTS.set(socket, client);
-
-    if(client.player.name == null)
-    {
-        // name was not passed, bad packet
-        // TODO: better packet validation later
-        return false;
-    }
-
-    // emit every connected frontend that a client connected
-    
-    var fullPacket = client.createFullPacket();
-    Api.GetSocket().to('frontend').emit('BEND_CLIENT_JOIN', fullPacket);
-    
-    console.log(`Player '${player.name}' connected`);
-    return client;
-}
-
-function GetClient(socket)
-{
-    return CLIENTS.get(socket);
-}
-
-function DisconnectClient(socket)
-{
-    var client = CLIENTS.get(socket);
-    if(client == null)
-        return;
-
-    Api.GetSocket().to('frontend').emit('BEND_CLIENT_DISCONNECT', {name:client.player.name});
-    console.log(`Player '${client.player.name}' disconnected`);
-    client.socket.disconnect();
-    CLIENTS.delete(socket);
-}
+var worldManager = new WorldManager();
 
 Api.OnApiInitialized(() =>
 {
@@ -69,10 +28,12 @@ Api.OnApiInitialized(() =>
         {
             socket.join(system);
             console.log("frontend connection!");
-            for(var [key, value] of CLIENTS)
+            
+            var clients = worldManager.getClients();
+            for(var i = 0; i < clients.length; i++)
             {
                 // TODO: send an array instead of calling multiple emits
-                socket.emit('BEND_CLIENT_JOIN', value.createFullPacket());
+                socket.emit('BEND_CLIENT_JOIN', clients[i].createFullPacket());
             }
         }
         else if(system == 'runelite')
@@ -95,9 +56,10 @@ Api.OnApiInitialized(() =>
             {
                 var parsedJson = JSON.parse(data);
 
-                if(GetClient(socket) == null)
+                if(socket.clientData == null)
                 {
-                    if(!ConnectClient(socket, parsedJson))
+                    var world = worldManager.getWorld(parsedJson.world);
+                    if(world == null || !world.connectClient(socket, parsedJson))
                         socket.disconnect();
                 }
             });
@@ -106,22 +68,18 @@ Api.OnApiInitialized(() =>
             socket.on('RL_UPDATE_STATE', (data) =>
             {
                 var parsedJson = JSON.parse(data);
-                var client = GetClient(socket)
-                if(client == null)
+                if(socket.clientData == null)
                 {
                     // if the client somehow dont exist here, disconnect him and force him to reconnect
                     socket.disconnect();
-                    //client = ConnectClient(socket, new Player(parsedJson.name, parsedJson.pos));
                 }
                 else
                 {
                     // update state
-                    client.parsePacket(parsedJson);
-
-                    //var fullPacket = client.createFullPacket();
+                    socket.clientData.parsePacket(parsedJson);
 
                     // add identifier to the packet, so front end clients can identify the packet
-                    parsedJson.name = client.player.name;
+                    parsedJson.name = socket.clientData.player.name;
                     console.log(parsedJson);
 
                     // volatile for updating, no need to resend old packets
@@ -131,7 +89,15 @@ Api.OnApiInitialized(() =>
 
             socket.on('disconnect', () =>
             {
-                DisconnectClient(socket);
+                var client = socket.clientData;
+                if(client == null)
+                    return;
+
+                var world = worldManager.getWorld(client.player.world);
+                if(world == null)
+                    return;
+
+                world.disconnectClient(socket);
             });
         }
     });
