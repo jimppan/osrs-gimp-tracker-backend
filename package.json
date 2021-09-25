@@ -1,0 +1,28 @@
+{
+  "name": "osrs-gimp-tracker-backend",
+  "version": "1.0.0",
+  "description": "Backend for tracking connected OSRS characters",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rachnus/osrs-gimp-tracker-backend.git"
+  },
+  "author": "Jimi Bertlin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rachnus/osrs-gimp-tracker-backend/issues"
+  },
+  "homepage": "https://github.com/Rachnus/osrs-gimp-tracker-backend#readme",
+  "dependencies": {
+    "connect-pg-simple": "^7.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "express-session": "^1.17.2",
+    "http": "0.0.1-security",
+    "pg": "^8.7.1",
+    "socket.io": "^4.2.0"
+  }
+}
