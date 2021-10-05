@@ -111,6 +111,10 @@ class Player
         this.inventory = new Inventory(INVENTORY_SIZE);
         this.skills = new Skills();
         this.equipment = new Inventory(EQUIPMENT_SIZE);
+
+        this.health = 10;
+        this.prayer = 1;
+        this.energy = 100;
     }
 }
 
