@@ -19,7 +19,16 @@ class Client
 
         if(packet.name != null)
             this.player.name = packet.name;
+        
+        if(packet.health != null)
+            this.player.health = packet.health;
 
+        if(packet.prayer != null)
+            this.player.prayer = packet.prayer;
+
+        if(packet.energy != null)
+            this.player.energy = packet.energy;
+            
         if(packet.world != null)
         {
             var oldWorld = this.player.world;
@@ -84,6 +93,9 @@ class Client
     {
         var packet = {};
 
+        packet.health = this.player.health;
+        packet.prayer = this.player.prayer;
+        packet.energy = this.player.energy;
         packet.name = this.player.name;
         packet.world = this.player.world;
         packet.pos = this.player.position;
