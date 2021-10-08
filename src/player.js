@@ -47,6 +47,15 @@ const EQUIPMENT =
     MAX: EQUIPMENT_SIZE,
 }
 
+const ACCOUNT_TYPE =
+{
+    NORMAL: 0,
+    IRONMAN: 1,
+    ULTIMATE_IRONMAN: 2,
+    HARDCORE_IRONMAN: 3,
+    GROUP_IRONMAN: 4,
+    HARDCORE_GROUP_IRONMAN: 5
+}
 
 class Item 
 {
@@ -112,6 +121,7 @@ class Player
         this.skills = new Skills();
         this.equipment = new Inventory(EQUIPMENT_SIZE);
 
+        this.accountType = 0;
         this.health = 10;
         this.prayer = 1;
         this.energy = 100;
