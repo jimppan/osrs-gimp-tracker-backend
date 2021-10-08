@@ -41,10 +41,11 @@ class Client
                 this.hop(newWorld);
         }
 
+        if(packet.accountType != null)
+            this.player.accountType = packet.accountType;
+
         if(packet.pos != null)
-        {
             this.player.position = packet.pos;
-        }
 
         if(packet.inventory != null)
         {
@@ -99,6 +100,7 @@ class Client
         packet.name = this.player.name;
         packet.world = this.player.world;
         packet.pos = this.player.position;
+        packet.accountType = this.player.accountType;
 
         var inventory = {};
         for(var i = 0; i < INVENTORY_SIZE; i++)
